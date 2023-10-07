@@ -20,8 +20,6 @@ var firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 
-
-
 firebase.database().ref().on("value", function (snapshot) {
   console.log();
   Object.entries(snapshot.val().markers).forEach((entry) => {
