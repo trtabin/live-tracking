@@ -1,33 +1,52 @@
-// Initialize the map
-var map = L.map('map').setView([23.7644025, 90.3890150], 10);
+// Initialize Firebase with your own Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAJQBw0dwSqriGDVajDxd6UII5ZZTkIlRI",
+  authDomain: "hydroquotracker.firebaseapp.com",
+  databaseURL: "https://hydroquotracker-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "hydroquotracker",
+  storageBucket: "hydroquotracker.appspot.com",
+  messagingSenderId: "503693018454",
+  appId: "1:503693018454:web:7be1e63ddee23a087f82f7"
+};
 
-// Add the OpenStreetMap layer
-L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+firebase.initializeApp(firebaseConfig);
 
-// Initialize an empty array to store user-provided marker coordinates
-var userMarkers = [];
+// Reference to the Firebase database
+const database = firebase.database();
 
-// Function to add a marker based on user input
-function addMarker() {
-  var latInput = parseFloat(prompt("Enter latitude:"));
-  var lonInput = parseFloat(prompt("Enter longitude:"));
+// Initialize Leaflet map
+const map = L.map('map').setView([23.7644025, 90.3890150], 10); // Initial center and zoom level
 
-  if (!isNaN(latInput) && !isNaN(lonInput)) {
-      // Create a marker and add it to the map
-      var marker = L.marker([latInput, lonInput]).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+}).addTo(map);
 
-      // Add the marker to the userMarkers array
-      userMarkers.push(marker);
+// Function to add a marker to the map and save its position to Firebase
+document.getElementById('addMarkerButton').addEventListener('click', () => {
+  navigator.geolocation.getCurrentPosition(position => {
+    const { latitude, longitude } = position.coords;
+    
+    // Add a marker to the map
+    const marker = L.marker([latitude, longitude]).addTo(map);
 
-      // Center the map to the user's latest marker
-      map.panTo([latInput, lonInput]);
+    // Save the latitude and longitude to Firebase
+    database.ref('markers').push({
+      latitude,
+      longitude
+    });
+  });
+});
 
-      // Optionally, you can display all user markers in the console
-      console.log("User markers:", userMarkers);
-  } else {
-      alert("Invalid input. Please enter valid latitude and longitude.");
-  }
+// Function to retrieve and display markers from Firebase
+function displayMarkers() {
+  database.ref('markers').on('child_added', snapshot => {
+    const markerData = snapshot.val();
+    const { latitude, longitude } = markerData;
+
+    // Add a marker to the map
+    const marker = L.marker([latitude, longitude]).addTo(map);
+  });
 }
 
-// Add a click event listener to the "Add Marker" button
-document.getElementById("addMarkerButton").addEventListener("click", addMarker);
+// Call the function to initially display markers
+displayMarkers();
